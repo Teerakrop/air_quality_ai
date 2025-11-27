@@ -1,0 +1,25 @@
+{
+    "folders": [
+        {
+            "name": "Air Quality AI",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.terminal.activateEnvironment": false,
+        "files.watcherExclude": {
+            "**/data/**": true,
+            "**/models/**": true,
+            "**/logs/**": true,
+            "**/__pycache__/**": true
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-toolsai.jupyter",
+            "ms-python.flake8"
+        ]
+    }
+}
