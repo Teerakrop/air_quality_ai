@@ -43,6 +43,7 @@ class AirQualityAISystem:
         
         # Threads
         self.data_collection_thread = None
+        self.dashboard_thread = None
         
         # Setup signal handlers for graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -79,10 +80,15 @@ class AirQualityAISystem:
         self.data_collection_thread = threading.Thread(target=self._data_collection_loop, daemon=True)
         self.data_collection_thread.start()
         
+        # Start dashboard in a separate thread
+        self.dashboard_thread = threading.Thread(target=self._start_dashboard, daemon=True)
+        self.dashboard_thread.start()
+        
         logger.info("✅ Air Quality AI System started successfully!")
         logger.info(f"📊 Data collection interval: {config.DATA_COLLECTION_INTERVAL} seconds")
         logger.info(f"🤖 Model type: {self.model_manager.current_model_type or 'None (will train later)'}")
-        logger.info(f"🌐 Dashboard available at: http://localhost:{config.DASHBOARD_PORT}")
+        logger.info(f"🌐 Dashboard available at: http://{config.DASHBOARD_HOST}:{config.DASHBOARD_PORT}")
+        logger.info(f"🌐 Local access: http://localhost:{config.DASHBOARD_PORT}")
         
         return True
     
@@ -101,11 +107,70 @@ class AirQualityAISystem:
         if self.sensor:
             self.sensor.disconnect()
         
-        # Wait for data collection thread to finish
+        # Wait for threads to finish
         if self.data_collection_thread and self.data_collection_thread.is_alive():
             self.data_collection_thread.join(timeout=5)
         
+        if self.dashboard_thread and self.dashboard_thread.is_alive():
+            self.dashboard_thread.join(timeout=2)
+        
         logger.info("✅ Air Quality AI System stopped")
+    
+    def _start_dashboard(self):
+        """
+        Start the web dashboard in a separate thread
+        """
+        try:
+            logger.info("🌐 Starting web dashboard...")
+            
+            # Import dashboard here to avoid circular imports
+            from dashboard import app
+            
+            # Start the dashboard server
+            app.run_server(
+                host=config.DASHBOARD_HOST,
+                port=config.DASHBOARD_PORT,
+                debug=config.DASHBOARD_DEBUG,
+                use_reloader=False,  # Disable reloader in threaded mode
+                dev_tools_hot_reload=False  # Disable hot reload
+            )
+            
+        except ImportError as e:
+            logger.error(f"❌ Dashboard import failed: {e}")
+            logger.info("🔄 Trying simple dashboard fallback...")
+            self._start_simple_dashboard()
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to start dashboard: {e}")
+            logger.info("🔄 Trying simple dashboard fallback...")
+            self._start_simple_dashboard()
+    
+    def _start_simple_dashboard(self):
+        """
+        Start simple fallback dashboard
+        """
+        try:
+            from simple_dashboard import create_dash_app
+            
+            app = create_dash_app()
+            if app:
+                logger.info("🌐 Starting simple dashboard...")
+                app.run_server(
+                    host=config.DASHBOARD_HOST,
+                    port=config.DASHBOARD_PORT,
+                    debug=False,
+                    use_reloader=False,
+                    dev_tools_hot_reload=False
+                )
+            else:
+                raise ImportError("Simple dashboard not available")
+                
+        except Exception as e:
+            logger.error(f"❌ Simple dashboard also failed: {e}")
+            logger.info("💡 Dashboard unavailable. You can:")
+            logger.info(f"   - Check data files in: {config.DATA_DIR}")
+            logger.info(f"   - Run: python3 simple_dashboard.py")
+            logger.info(f"   - Run: python3 start_website.py")
     
     def _initialize_model(self) -> bool:
         """

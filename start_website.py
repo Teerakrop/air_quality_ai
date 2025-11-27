@@ -41,7 +41,7 @@ def main():
         print("Press Ctrl+C to stop the server")
         print("-" * 50)
         
-        app.run(
+        app.run_server(
             host=config.DASHBOARD_HOST,
             port=config.DASHBOARD_PORT,
             debug=False
