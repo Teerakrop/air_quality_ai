@@ -1,0 +1,30 @@
+# Minimal requirements for Air Quality AI on Jetson Nano (119GB SD card)
+# Optimized for space and performance
+
+# Core data processing (use system packages when possible)
+# sudo apt install python3-numpy python3-pandas python3-matplotlib python3-scipy python3-sklearn -y
+
+# Web framework - essential packages only
+dash==2.14.1
+dash-bootstrap-components==1.5.0
+plotly==5.17.0
+flask==2.3.3
+
+# System communication
+pyserial==3.5
+
+# Utilities - lightweight versions
+schedule==1.2.0
+psutil==5.9.5
+tqdm==4.66.1
+python-dotenv==1.0.0
+joblib==1.3.2
+
+# Optional: TensorFlow Lite (much smaller than full TensorFlow)
+# tflite-runtime>=2.5.0
+
+# Note: Skip these to save space on 119GB SD card:
+# tensorflow (>2GB)
+# jupyter (>500MB) 
+# opencv (>200MB)
+# scipy (use system package instead)
