@@ -1,0 +1,32 @@
+# Working dependencies for Air Quality AI System
+# Tested and verified to work
+
+# Core data processing
+numpy
+pandas
+scikit-learn
+matplotlib
+plotly
+joblib
+
+# Web dashboard
+dash
+dash-bootstrap-components
+flask
+
+# Serial communication
+pyserial
+
+# Scheduling and utilities
+schedule
+psutil
+tqdm
+
+# Environment variables
+python-dotenv
+
+# Optional: TensorFlow (may not work on all systems)
+# tensorflow
+
+# Optional: Jetson Nano GPIO (only if using GPIO directly)
+# Jetson.GPIO
