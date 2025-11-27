@@ -1,0 +1,56 @@
+{
+    // Python Configuration for Jetson Nano
+    "python.defaultInterpreterPath": "/usr/bin/python3",
+    "python.terminal.activateEnvironment": false,
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": ["--max-line-length=120", "--ignore=E501,W503"],
+    
+    // Performance Settings for Jetson Nano
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/.git/objects/**": true,
+        "**/data/**": true,
+        "**/models/**": true,
+        "**/logs/**": true,
+        "**/__pycache__/**": true,
+        "**/*.pyc": true
+    },
+    
+    // Editor Settings
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.rulers": [80, 120],
+    "editor.wordWrap": "on",
+    "editor.formatOnSave": true,
+    
+    // File Associations
+    "files.associations": {
+        "*.ino": "cpp",
+        "*.md": "markdown"
+    },
+    
+    // Terminal Settings
+    "terminal.integrated.shell.linux": "/bin/bash",
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    
+    // Git Settings
+    "git.ignoreLimitWarning": true,
+    "git.autofetch": false,
+    
+    // Jupyter Settings
+    "jupyter.askForKernelRestart": false,
+    "jupyter.interactiveWindowMode": "perFile",
+    
+    // Memory Optimization for Jetson Nano
+    "search.followSymlinks": false,
+    "search.useIgnoreFiles": true,
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/data/*.csv": true,
+        "**/models/*.h5": true,
+        "**/models/*.joblib": true
+    }
+}

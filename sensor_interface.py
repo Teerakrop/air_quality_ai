@@ -241,20 +241,48 @@ class MockSensorInterface(SensorInterface):
         return True
     
     def read_sensor_data(self) -> Optional[Dict]:
-        """Generate mock sensor data"""
+        """Generate mock sensor data - Thailand specific"""
         import random
+        from datetime import datetime
         
         if not self.is_connected:
             return None
         
-        # Generate realistic mock data
+        # ข้อมูลจำลองแบบประเทศไทย
+        current_hour = datetime.now().hour
+        
+        # รูปแบบมลพิษตามเวลาแบบไทย
+        if 7 <= current_hour <= 9 or 17 <= current_hour <= 19:  # ช่วงเร่งด่วน
+            pm25_base = random.uniform(35, 65)  # กรุงเทพฯ ช่วงรถติด
+            pm10_base = random.uniform(45, 85)
+        elif 22 <= current_hour or current_hour <= 6:  # กลางคืน
+            pm25_base = random.uniform(15, 35)  # ยังมีมลพิษตกค้าง
+            pm10_base = random.uniform(25, 45)
+        else:  # เวลาปกติ
+            pm25_base = random.uniform(25, 45)  # ระดับปานกลางของไทย
+            pm10_base = random.uniform(35, 60)
+        
+        # อุณหภูมิแบบไทย (20-38°C)
+        temp_base = 28 + 6 * (current_hour - 12) / 12  # รอบวัน
+        temperature = temp_base + random.uniform(-3, 3)
+        temperature = max(20, min(38, temperature))
+        
+        # ความชื้นสูงแบบไทย (50-95%)
+        humidity_base = 75 - (temperature - 28) * 1.5
+        humidity = humidity_base + random.uniform(-10, 10)
+        humidity = max(50, min(95, humidity))
+        
+        # ระดับแก๊สตามมลพิษ
+        gas_level = int(200 + pm25_base * 5 + random.uniform(-50, 50))
+        gas_level = max(100, min(800, gas_level))
+        
         mock_data = {
             'timestamp': datetime.now().isoformat(),
-            'pm25': round(random.uniform(5, 50), 1),
-            'pm10': round(random.uniform(10, 80), 1),
-            'temperature': round(random.uniform(20, 35), 1),
-            'humidity': round(random.uniform(40, 80), 1),
-            'gas_level': random.randint(100, 500)
+            'pm25': round(pm25_base, 1),
+            'pm10': round(pm10_base, 1),
+            'temperature': round(temperature, 1),
+            'humidity': round(humidity, 1),
+            'gas_level': gas_level
         }
         
         logger.debug(f"Mock sensor data: {mock_data}")

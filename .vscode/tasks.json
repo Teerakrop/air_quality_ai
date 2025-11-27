@@ -1,0 +1,117 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "🔧 Install Dependencies (Jetson Nano)",
+            "type": "shell",
+            "command": "bash",
+            "args": ["install_jetson_nano.sh"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "📦 Install Python Requirements",
+            "type": "shell",
+            "command": "pip3",
+            "args": ["install", "-r", "requirements_jetson_nano.txt", "--user"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "🚀 Start Air Quality System",
+            "type": "shell",
+            "command": "python3",
+            "args": ["main.py"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "🧪 Start with Mock Sensor",
+            "type": "shell",
+            "command": "python3",
+            "args": ["main.py", "--mock"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "🌐 Start Dashboard Only",
+            "type": "shell",
+            "command": "python3",
+            "args": ["start_website.py"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "🔍 Check System Status",
+            "type": "shell",
+            "command": "python3",
+            "args": ["check_system_space.py"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "🧹 Clean Data Files",
+            "type": "shell",
+            "command": "rm",
+            "args": ["-f", "data/*.csv", "logs/*.log"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "⚡ Enable Jetson Performance Mode",
+            "type": "shell",
+            "command": "sudo",
+            "args": ["jetson_clocks"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

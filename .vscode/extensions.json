@@ -1,0 +1,33 @@
+{
+    "recommendations": [
+        // Essential Python Development
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        
+        // Code Quality
+        "ms-python.flake8",
+        "ms-python.autopep8",
+        
+        // Git Integration
+        "eamodio.gitlens",
+        
+        // File Management
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        
+        // Arduino/ESP32 Support
+        "vsciot-vscode.vscode-arduino",
+        
+        // Markdown Support
+        "yzhang.markdown-all-in-one",
+        
+        // CSV Viewer (for data files)
+        "mechatroner.rainbow-csv"
+    ],
+    "unwantedRecommendations": [
+        // Heavy extensions that may slow down Jetson Nano
+        "ms-vscode.vscode-typescript-next",
+        "ms-vscode.vscode-eslint",
+        "bradlc.vscode-tailwindcss"
+    ]
+}

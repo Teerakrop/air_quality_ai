@@ -31,15 +31,21 @@ try:
             try:
                 for gpu in gpus:
                     tf.config.experimental.set_memory_growth(gpu, True)
-                logger.info("GPU memory growth enabled for Jetson Nano")
+                # Set memory limit for Jetson Nano (leave 1GB for system)
+                tf.config.experimental.set_memory_limit(gpu, 3072)  # 3GB limit
+                print("GPU memory growth and limit configured for Jetson Nano")
             except RuntimeError as e:
-                logger.warning(f"GPU configuration warning: {e}")
+                print(f"GPU configuration warning: {e}")
+        
+        # Additional Jetson Nano optimizations
+        tf.config.threading.set_inter_op_parallelism_threads(config.MAX_CPU_CORES)
+        tf.config.threading.set_intra_op_parallelism_threads(config.MAX_CPU_CORES)
     
     TENSORFLOW_AVAILABLE = True
-    logger.info(f"TensorFlow {tf.__version__} loaded successfully")
+    print(f"TensorFlow {tf.__version__} loaded successfully")
 except ImportError as e:
     TENSORFLOW_AVAILABLE = False
-    logger.warning(f"TensorFlow not available: {e}. LSTM models will not work.")
+    print(f"Warning: TensorFlow not available: {e}. LSTM models will not work.")
 
 import config
 

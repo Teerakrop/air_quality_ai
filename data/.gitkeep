@@ -1,2 +1,2 @@
-# Keep this directory in git
-
+# This file ensures the data directory is tracked by git
+# Actual CSV files are ignored but the directory structure is preserved

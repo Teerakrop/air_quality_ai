@@ -128,9 +128,61 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Project specific
-logs/
-models/*.pkl
-models/*.joblib
+# Air Quality AI Specific Files
+# Data files (keep structure but not actual data)
 data/*.csv
-*.pdf
+!data/.gitkeep
+
+# Model files (too large for git)
+models/*.h5
+models/*.joblib
+models/*.pkl
+!models/.gitkeep
+
+# Log files
+logs/*.log
+logs/*.txt
+!logs/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE specific files
+.vscode/settings.json.bak
+.idea/
+*.swp
+*.swo
+*~
+
+# Jetson Nano specific
+/swapfile
+*.tegra
+
+# Arduino/ESP32 build files
+*.elf
+*.bin
+*.hex
+
+# Performance monitoring files
+*.perf
+*.prof
+
+# Backup files
+*.bak
+*.backup
+*_backup.*
+
+# Configuration overrides (keep template)
+config_local.py
+.env.local

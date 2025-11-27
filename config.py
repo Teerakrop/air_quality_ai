@@ -81,6 +81,13 @@ RETRAIN_INTERVAL_HOURS = 24  # Retrain model every 24 hours
 JETSON_OPTIMIZATION = True
 MAX_BATCH_SIZE = 16  # Smaller batch size for Jetson Nano
 MAX_EPOCHS = 30  # Fewer epochs to prevent overheating
+MAX_CPU_CORES = 2   # Limit CPU usage on Jetson Nano
+ENABLE_GPU_MEMORY_GROWTH = True  # Prevent TensorFlow from allocating all GPU memory
+
+# VS Code 1.68.1 Compatibility Settings
+VSCODE_COMPATIBILITY = True
+DISABLE_HEAVY_LOGGING = True  # Reduce log output for better VS Code performance
+OPTIMIZE_FOR_DEVELOPMENT = True  # Enable development-friendly settings
 
 # Dashboard Settings
 DASHBOARD_HOST = '0.0.0.0'
