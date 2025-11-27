@@ -559,53 +559,107 @@ def update_predictions_display(n):
     Input('interval-component', 'n_intervals')
 )
 def update_accuracy_chart(n):
-    """Update accuracy chart"""
+    """Update accuracy chart with improved visualization"""
     try:
-        accuracy_summary = prediction_system.get_accuracy_summary(days=7)
-        
-        if not accuracy_summary:
+        # Try to get accuracy data from CSV file directly
+        try:
+            accuracy_df = pd.read_csv(config.ACCURACY_LOG_FILE)
+            if accuracy_df.empty:
+                raise FileNotFoundError("No accuracy data")
+        except:
             return go.Figure().add_annotation(
-                text="No accuracy data available",
+                text="📊 No accuracy data available yet<br><br>🕐 Please wait for the system to collect<br>prediction accuracy data (1-2 hours)",
                 xref="paper", yref="paper",
-                x=0.5, y=0.5, showarrow=False
+                x=0.5, y=0.5, showarrow=False,
+                font=dict(size=14, color="#666")
             )
         
+        # Create subplots for different metrics
         fig = go.Figure()
         
-        # Extract data for plotting
-        models = []
-        horizons = []
-        mae_pm25 = []
+        # Get recent data (last 24 hours)
+        accuracy_df['timestamp'] = pd.to_datetime(accuracy_df['timestamp'])
+        recent_data = accuracy_df[accuracy_df['timestamp'] >= datetime.now() - timedelta(hours=24)]
         
-        for model_type, model_data in accuracy_summary.items():
-            for horizon, metrics in model_data.items():
-                models.append(f"{model_type}")
-                horizons.append(horizon)
-                mae_pm25.append(metrics['mae_pm25'])
+        if recent_data.empty:
+            recent_data = accuracy_df.tail(10)  # Get last 10 records
         
-        if mae_pm25:
-            fig.add_trace(go.Bar(
-                x=[f"{m} {h}" for m, h in zip(models, horizons)],
-                y=mae_pm25,
-                name='MAE PM2.5',
-                marker_color=COLORS['primary']
-            ))
+        # Create accuracy trend chart
+        colors = ['#3498db', '#e74c3c', '#f39c12', '#2ecc71']
+        metrics = ['mae_pm25', 'mae_pm10', 'mae_temp', 'mae_humidity']
+        metric_names = ['PM2.5', 'PM10', 'Temperature', 'Humidity']
+        
+        for i, (metric, name) in enumerate(zip(metrics, metric_names)):
+            if metric in recent_data.columns:
+                fig.add_trace(go.Scatter(
+                    x=recent_data['timestamp'],
+                    y=recent_data[metric],
+                    mode='lines+markers',
+                    name=f'{name} Error',
+                    line=dict(color=colors[i % len(colors)], width=3),
+                    marker=dict(size=6),
+                    hovertemplate=f'<b>{name}</b><br>Error: %{{y:.2f}}<br>Time: %{{x}}<extra></extra>'
+                ))
+        
+        # Calculate average accuracy
+        avg_accuracy = {}
+        for metric, name in zip(metrics, metric_names):
+            if metric in recent_data.columns and not recent_data[metric].empty:
+                avg_val = recent_data[metric].mean()
+                avg_accuracy[name] = avg_val
+        
+        # Add accuracy summary as annotation
+        if avg_accuracy:
+            summary_text = "📈 Average Prediction Errors:<br>"
+            for name, val in avg_accuracy.items():
+                summary_text += f"• {name}: {val:.2f}<br>"
+            
+            fig.add_annotation(
+                text=summary_text,
+                xref="paper", yref="paper",
+                x=0.02, y=0.98,
+                showarrow=False,
+                align="left",
+                bgcolor="rgba(255,255,255,0.8)",
+                bordercolor="#ddd",
+                borderwidth=1,
+                font=dict(size=10)
+            )
         
         fig.update_layout(
-            title="Prediction Accuracy (MAE PM2.5)",
-            xaxis_title="Model & Horizon",
-            yaxis_title="Mean Absolute Error (μg/m³)",
-            height=300
+            title={
+                'text': "🎯 Prediction Accuracy Trends (Lower is Better)",
+                'x': 0.5,
+                'font': {'size': 16, 'color': '#2c3e50'}
+            },
+            xaxis_title="Time",
+            yaxis_title="Prediction Error",
+            height=350,
+            hovermode='x unified',
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
         )
+        
+        # Style the axes
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
         
         return fig
         
     except Exception as e:
         logger.error(f"Error updating accuracy chart: {e}")
         return go.Figure().add_annotation(
-            text=f"Error loading accuracy: {str(e)}",
+            text=f"❌ Error loading accuracy data<br><br>{str(e)}",
             xref="paper", yref="paper",
-            x=0.5, y=0.5, showarrow=False
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=12, color="#e74c3c")
         )
 
 @app.callback(
@@ -613,65 +667,164 @@ def update_accuracy_chart(n):
     Input('interval-component', 'n_intervals')
 )
 def update_comparison_chart(n):
-    """Update historical vs predicted comparison chart"""
+    """Update historical vs predicted comparison chart with improved visualization"""
     try:
-        # Get recent predictions with actual values
-        predictions_df = prediction_system.get_latest_predictions(hours=48)
-        
-        if predictions_df is None or predictions_df.empty:
+        # Try to get predictions data from CSV file directly
+        try:
+            predictions_df = pd.read_csv(config.PREDICTIONS_FILE)
+            if predictions_df.empty:
+                raise FileNotFoundError("No predictions data")
+        except:
             return go.Figure().add_annotation(
-                text="No prediction comparison data available",
+                text="📈 No prediction comparison data available yet<br><br>🕐 Please wait for the system to make<br>predictions and collect actual data",
                 xref="paper", yref="paper",
-                x=0.5, y=0.5, showarrow=False
+                x=0.5, y=0.5, showarrow=False,
+                font=dict(size=14, color="#666")
             )
         
+        # Convert timestamps
+        predictions_df['timestamp'] = pd.to_datetime(predictions_df['timestamp'])
+        predictions_df['prediction_time'] = pd.to_datetime(predictions_df['prediction_time'])
+        
         # Filter for completed predictions (with actual values)
-        completed = predictions_df.dropna(subset=['actual_pm25'])
+        completed = predictions_df.dropna(subset=['actual_pm25', 'actual_pm10'])
         
         if completed.empty:
             return go.Figure().add_annotation(
-                text="No completed predictions for comparison",
+                text="📊 Predictions made, waiting for actual data<br><br>⏳ Check back in 1-2 hours for comparison",
                 xref="paper", yref="paper",
-                x=0.5, y=0.5, showarrow=False
+                x=0.5, y=0.5, showarrow=False,
+                font=dict(size=14, color="#666")
             )
         
-        fig = go.Figure()
+        # Get recent data (last 24 hours)
+        recent_completed = completed[completed['timestamp'] >= datetime.now() - timedelta(hours=24)]
+        if recent_completed.empty:
+            recent_completed = completed.tail(20)  # Get last 20 records
         
-        # Plot predicted vs actual for PM2.5
-        fig.add_trace(go.Scatter(
-            x=completed['prediction_time'],
-            y=completed['predicted_pm25'],
-            mode='markers+lines',
-            name='Predicted PM2.5',
-            line=dict(color=COLORS['primary'], dash='dash'),
-            marker=dict(symbol='circle')
-        ))
+        # Create subplots for PM2.5 and PM10
+        from plotly.subplots import make_subplots
         
-        fig.add_trace(go.Scatter(
-            x=completed['prediction_time'],
-            y=completed['actual_pm25'],
-            mode='markers+lines',
-            name='Actual PM2.5',
-            line=dict(color=COLORS['danger']),
-            marker=dict(symbol='x')
-        ))
-        
-        fig.update_layout(
-            title="Predicted vs Actual PM2.5 (Last 48 Hours)",
-            xaxis_title="Time",
-            yaxis_title="PM2.5 (μg/m³)",
-            height=400,
-            hovermode='x unified'
+        fig = make_subplots(
+            rows=2, cols=1,
+            subplot_titles=('🌫️ PM2.5 Comparison', '💨 PM10 Comparison'),
+            vertical_spacing=0.12,
+            shared_xaxes=True
         )
+        
+        # PM2.5 comparison
+        fig.add_trace(
+            go.Scatter(
+                x=recent_completed['timestamp'],
+                y=recent_completed['predicted_pm25'],
+                mode='lines+markers',
+                name='🔮 Predicted PM2.5',
+                line=dict(color='#3498db', width=3, dash='dash'),
+                marker=dict(size=6, symbol='circle'),
+                hovertemplate='<b>Predicted PM2.5</b><br>Value: %{y:.1f} μg/m³<br>Time: %{x}<extra></extra>'
+            ),
+            row=1, col=1
+        )
+        
+        fig.add_trace(
+            go.Scatter(
+                x=recent_completed['timestamp'],
+                y=recent_completed['actual_pm25'],
+                mode='lines+markers',
+                name='✅ Actual PM2.5',
+                line=dict(color='#e74c3c', width=3),
+                marker=dict(size=6, symbol='x'),
+                hovertemplate='<b>Actual PM2.5</b><br>Value: %{y:.1f} μg/m³<br>Time: %{x}<extra></extra>'
+            ),
+            row=1, col=1
+        )
+        
+        # PM10 comparison
+        fig.add_trace(
+            go.Scatter(
+                x=recent_completed['timestamp'],
+                y=recent_completed['predicted_pm10'],
+                mode='lines+markers',
+                name='🔮 Predicted PM10',
+                line=dict(color='#9b59b6', width=3, dash='dash'),
+                marker=dict(size=6, symbol='circle'),
+                hovertemplate='<b>Predicted PM10</b><br>Value: %{y:.1f} μg/m³<br>Time: %{x}<extra></extra>',
+                showlegend=False
+            ),
+            row=2, col=1
+        )
+        
+        fig.add_trace(
+            go.Scatter(
+                x=recent_completed['timestamp'],
+                y=recent_completed['actual_pm10'],
+                mode='lines+markers',
+                name='✅ Actual PM10',
+                line=dict(color='#f39c12', width=3),
+                marker=dict(size=6, symbol='x'),
+                hovertemplate='<b>Actual PM10</b><br>Value: %{y:.1f} μg/m³<br>Time: %{x}<extra></extra>',
+                showlegend=False
+            ),
+            row=2, col=1
+        )
+        
+        # Calculate accuracy metrics
+        pm25_mae = abs(recent_completed['predicted_pm25'] - recent_completed['actual_pm25']).mean()
+        pm10_mae = abs(recent_completed['predicted_pm10'] - recent_completed['actual_pm10']).mean()
+        
+        # Add accuracy summary
+        accuracy_text = f"📊 Accuracy Summary:<br>• PM2.5 MAE: {pm25_mae:.2f} μg/m³<br>• PM10 MAE: {pm10_mae:.2f} μg/m³<br>• Records: {len(recent_completed)}"
+        
+        fig.add_annotation(
+            text=accuracy_text,
+            xref="paper", yref="paper",
+            x=0.02, y=0.98,
+            showarrow=False,
+            align="left",
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="#ddd",
+            borderwidth=1,
+            font=dict(size=11)
+        )
+        
+        # Update layout
+        fig.update_layout(
+            title={
+                'text': "🔍 Predicted vs Actual Values Comparison",
+                'x': 0.5,
+                'font': {'size': 16, 'color': '#2c3e50'}
+            },
+            height=500,
+            hovermode='x unified',
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        
+        # Update axes
+        fig.update_xaxes(title_text="Time", row=2, col=1)
+        fig.update_yaxes(title_text="PM2.5 (μg/m³)", row=1, col=1)
+        fig.update_yaxes(title_text="PM10 (μg/m³)", row=2, col=1)
+        
+        # Style the axes
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
         
         return fig
         
     except Exception as e:
         logger.error(f"Error updating comparison chart: {e}")
         return go.Figure().add_annotation(
-            text=f"Error loading comparison: {str(e)}",
+            text=f"❌ Error loading comparison data<br><br>{str(e)}",
             xref="paper", yref="paper",
-            x=0.5, y=0.5, showarrow=False
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=12, color="#e74c3c")
         )
 
 if __name__ == "__main__":
