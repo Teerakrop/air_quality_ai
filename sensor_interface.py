@@ -37,34 +37,53 @@ class SensorInterface:
         Returns:
             bool: True if connection successful, False otherwise
         """
-        try:
-            self.serial_connection = serial.Serial(
-                port=self.port,
-                baudrate=self.baud_rate,
-                timeout=config.TIMEOUT,
-                bytesize=serial.EIGHTBITS,
-                parity=serial.PARITY_NONE,
-                stopbits=serial.STOPBITS_ONE
-            )
-            
-            # Wait for connection to stabilize
-            time.sleep(2)
-            
-            # Test connection with a ping
-            if self._test_connection():
-                self.is_connected = True
-                logger.info(f"Successfully connected to sensor on {self.port}")
-                return True
-            else:
-                logger.error("Connection test failed")
-                return False
+        # Try multiple ports if the configured one fails
+        ports_to_try = [self.port]
+        
+        # Add common Jetson Nano ports
+        import glob
+        jetson_ports = glob.glob('/dev/ttyACM*') + glob.glob('/dev/ttyUSB*')
+        for port in jetson_ports:
+            if port not in ports_to_try:
+                ports_to_try.append(port)
+        
+        for port_attempt in ports_to_try:
+            try:
+                logger.info(f"Trying to connect to {port_attempt}...")
+                self.serial_connection = serial.Serial(
+                    port=port_attempt,
+                    baudrate=self.baud_rate,
+                    timeout=config.TIMEOUT,
+                    bytesize=serial.EIGHTBITS,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE
+                )
                 
-        except serial.SerialException as e:
-            logger.error(f"Failed to connect to {self.port}: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Unexpected error during connection: {e}")
-            return False
+                # Update the port if successful
+                self.port = port_attempt
+            
+                # Wait for connection to stabilize
+                time.sleep(2)
+                
+                # Test connection with a ping
+                if self._test_connection():
+                    self.is_connected = True
+                    logger.info(f"Successfully connected to sensor on {port_attempt}")
+                    return True
+                else:
+                    logger.warning(f"Connection test failed for {port_attempt}")
+                    self.serial_connection.close()
+                    continue
+                    
+            except serial.SerialException as e:
+                logger.warning(f"Failed to connect to {port_attempt}: {e}")
+                continue
+            except Exception as e:
+                logger.warning(f"Unexpected error connecting to {port_attempt}: {e}")
+                continue
+        
+        logger.error(f"Failed to connect to any serial port. Tried: {ports_to_try}")
+        return False
     
     def _test_connection(self) -> bool:
         """

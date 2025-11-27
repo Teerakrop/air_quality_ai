@@ -17,15 +17,29 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split
 
-# Deep Learning Libraries
+# Deep Learning Libraries - Jetson Nano Compatible
 try:
     import tensorflow as tf
     from tensorflow import keras
     from tensorflow.keras import layers
+    
+    # Jetson Nano specific TensorFlow configuration
+    if hasattr(tf.config, 'experimental'):
+        # Limit GPU memory growth to prevent OOM
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        if gpus:
+            try:
+                for gpu in gpus:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+                logger.info("GPU memory growth enabled for Jetson Nano")
+            except RuntimeError as e:
+                logger.warning(f"GPU configuration warning: {e}")
+    
     TENSORFLOW_AVAILABLE = True
-except ImportError:
+    logger.info(f"TensorFlow {tf.__version__} loaded successfully")
+except ImportError as e:
     TENSORFLOW_AVAILABLE = False
-    logging.warning("TensorFlow not available. LSTM models will not work.")
+    logger.warning(f"TensorFlow not available: {e}. LSTM models will not work.")
 
 import config
 
@@ -156,7 +170,7 @@ class LSTMModel:
     
     def train(self, X_train: np.ndarray, y_train: np.ndarray, 
               X_val: np.ndarray, y_val: np.ndarray, 
-              epochs: int = 50, batch_size: int = 32) -> Dict:
+              epochs: int = None, batch_size: int = None) -> Dict:
         """
         Train LSTM model
         
@@ -182,14 +196,24 @@ class LSTMModel:
             monitor='val_loss', factor=0.2, patience=5, min_lr=0.001
         )
         
-        # Train model
+        # Jetson Nano optimized parameters
+        if epochs is None:
+            epochs = getattr(config, 'MAX_EPOCHS', 30)  # Fewer epochs for Jetson Nano
+        if batch_size is None:
+            batch_size = getattr(config, 'MAX_BATCH_SIZE', 16)  # Smaller batch size
+        
+        logger.info(f"Training with epochs={epochs}, batch_size={batch_size}")
+        
+        # Train model with Jetson Nano optimizations
         history = self.model.fit(
             X_train, y_train,
             validation_data=(X_val, y_val),
             epochs=epochs,
             batch_size=batch_size,
             callbacks=[early_stopping, reduce_lr],
-            verbose=1
+            verbose=1,
+            use_multiprocessing=False,  # Disable multiprocessing for stability
+            workers=1  # Single worker for Jetson Nano
         )
         
         self.is_trained = True
@@ -250,7 +274,7 @@ class RandomForestModel:
     """
     Random Forest model for time-series forecasting
     """
-    def __init__(self, n_estimators: int = 100, max_depth: int = 20):
+    def __init__(self, n_estimators: int = None, max_depth: int = None):
         """
         Initialize Random Forest model
         
@@ -258,8 +282,9 @@ class RandomForestModel:
             n_estimators: Number of trees
             max_depth: Maximum tree depth
         """
-        self.n_estimators = n_estimators
-        self.max_depth = max_depth
+        # Jetson Nano optimized parameters
+        self.n_estimators = n_estimators or (50 if getattr(config, 'JETSON_OPTIMIZATION', False) else 100)
+        self.max_depth = max_depth or (15 if getattr(config, 'JETSON_OPTIMIZATION', False) else 20)
         self.models = {}  # One model per target variable
         self.target_columns = ['pm25', 'pm10', 'temperature', 'humidity']
         self.is_trained = False
@@ -298,11 +323,14 @@ class RandomForestModel:
         for i, target in enumerate(self.target_columns):
             logger.info(f"Training Random Forest for {target}")
             
+            # Jetson Nano optimization: limit CPU cores
+            n_jobs = 2 if getattr(config, 'JETSON_OPTIMIZATION', False) else -1
+            
             model = RandomForestRegressor(
                 n_estimators=self.n_estimators,
                 max_depth=self.max_depth,
                 random_state=42,
-                n_jobs=-1
+                n_jobs=n_jobs
             )
             
             model.fit(X_train_flat, y_train[:, i])
